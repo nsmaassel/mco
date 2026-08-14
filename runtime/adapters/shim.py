@@ -23,7 +23,7 @@ from ..contracts import (
     TaskStatus,
 )
 from ..errors import classify_error, detect_warnings
-from ..platform import kill_process, resolve_spawn_arg, terminate_process, user_suffix
+from ..platform import kill_process, prepare_spawn, terminate_process, user_suffix
 from ..types import ErrorKind
 
 
@@ -119,15 +119,17 @@ class ShimAdapterBase:
 
         stdout_file = stdout_path.open("w", encoding="utf-8")
         stderr_file = stderr_path.open("w", encoding="utf-8")
+        env = _sanitize_env()
+        spawn_args, spawn_options = prepare_spawn(cmd, env)
         try:
             process = subprocess.Popen(
-                resolve_spawn_arg(cmd),
+                spawn_args,
                 cwd=input_task.repo_root,
                 stdout=stdout_file,
                 stderr=stderr_file,
                 text=True,
-                start_new_session=True,
-                env=_sanitize_env(),
+                env=env,
+                **spawn_options,
             )
         except Exception:
             stdout_file.close()
